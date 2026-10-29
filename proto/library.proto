@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+message Book {
+  string isbn = 1;
+  string title = 2;
+  string author = 3;
+  uint32 copies_remaining = 4;
+  uint32 total_copies = 5;
+}
+
+message GetBooksRequest{
+  int32 patron_id = 1;
+}
+
+message GetBooksResponse{
+  repeated string isbns = 1;
+}
+
+message GetInventorySummaryRequest {}
+
+message GetInventorySummaryResponse {
+  uint32 total_titles = 1;
+  uint32 total_copies = 2;
+  uint32 total_checked_out = 3;
+  uint32 total_available = 4;
+  repeated Book books = 5;
+}
+
+message GetBookCountRequest{
+  string book = 1; 
+}
+
+message GetBookCountResponse{
+  uint32 copies_remaining  = 1;
+}
+
+message CheckoutBookRequest {
+  string patron = 1;
+  string book = 2;
+}
+
+message CheckoutBookResponse {
+  enum Status {
+    OK = 0;
+    NOT_FOUND = 1; // patron or book not found
+    UNAVAILABLE = 2; // no copies_remaining
+    ERROR = 4;
+    ALREADY_EXISTS = 5;
+  }
+  Status status = 1;
+  string message = 2;
+  uint32 copies_remaining = 4;
+
+}
+
+
+
+message ReturnBookRequest {
+  string patron = 1;
+  string book = 2;
+}
+
+message ReturnBookResponse {
+  enum Status{
+    OK = 0;
+    NOT_FOUND = 1;
+    ERROR = 2;
+  }
+  Status status = 1;
+  string message = 2;
+  uint32 copies_remaining = 3;
+}
+
+message RegisterPatronRequest {
+  string patron = 1;
+}
+
+message RegisterPatronResponse {
+  enum Status {
+    OK = 0;
+    ALREADY_EXISTS = 1;
+    ERROR = 2;
+  }
+  Status status = 1;
+  string message = 2;
+}
+
+service Library {
+  // What books are currently checked out
+  // Finds a patron by name, then returns their books from nosql mongodb
+  rpc GetBooks (GetBooksRequest) returns (GetBooksResponse); 
+
+  // Fetches all available data from sql database pertaining to library
+  rpc GetInventorySummary (GetInventorySummaryRequest) returns (GetInventorySummaryResponse);
+
+  // How many of a certain book is remaining in the Library
+  // Returns copies_remaining in sql db
+  rpc GetBookCount (GetBookCountRequest) returns (GetBookCountResponse); 
+
+  // Checkout a book from mysql db, put it in the nosql db for each patron, return an error if 0 copies remaining in sql
+  rpc CheckoutBook(CheckoutBookRequest) returns (CheckoutBookResponse);
+
+  // Opposite of checkout book
+  rpc ReturnBook(ReturnBookRequest) returns (ReturnBookResponse);
+
+  // Registering a new patron
+  rpc RegisterPatron (RegisterPatronRequest) returns (RegisterPatronResponse);
+}
+
